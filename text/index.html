@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .card {
+            border-radius: 2vh;
+            background-color: darkgray;
+            padding: 1vh 1vw;
+            width: fit-content;
+        }
+
+        .lang-color {
+            border-radius: 50%;
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
+        }
+
+        .flex {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Recently, I've been working on:</h2>
+    <div class="card">
+        <h2><a class="link" href=""></a></h2>
+        <p class="desc"></p>
+        <div class="flex">
+            <p class="lang-color"></p>
+            <p class="lang"></p>
+        </div>
+    </div>
+    <script>
+        async function get_most_recent_repo(user) {
+            const url = `https://api.github.com/users/${user}/repos?per_page=100`;
+            return fetch(url)
+                .then(async response => {
+                    data = await response.json();
+                    if (!response.ok || data.length === 0) {
+                        return [{ name: "repo_fetch_failed" }];
+                    }
+                    return data;
+                })
+                .then(data => {
+                    data.sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
+                    return {
+                        repo: data[0].name,
+                        url: data[0].html_url,
+                        desc: data[0].description,
+                        lang: data[0].language
+                    };
+                })
+                .catch(error => console.log('There was a problem with the fetch operation: ' + error.message));
+        }
+        async function get_lang_color(lang) {
+            const url = "https://raw.githubusercontent.com/ozh/github-colors/master/colors.json";
+            return fetch(url)
+                .then(response => {
+                    return response.json();
+                })
+                .then(async data => {
+                    return data[lang].color;
+                })
+        }
+        async function main() {
+            const params = new URLSearchParams(window.location.search);
+            if (!params.has("user")) {
+                return;
+            }
+            const data = await get_most_recent_repo(params.get("user"));
+            const link = document.querySelector(".link");
+            link.href = data.url;
+            link.innerHTML = data.repo;
+            document.querySelector(".desc").innerHTML = data.desc;
+            document.querySelector(".lang").innerHTML = data.lang;
+            document.querySelector(".lang-color").style.backgroundColor = await get_lang_color(data.lang)
+        }
+        main()
+    </script>
+</body>
+
+</html>
