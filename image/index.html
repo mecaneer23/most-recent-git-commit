@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <script src="/image/html2canvas.min.js"></script>
+    <script src="/image/env.js"></script>
     <style>
         .card {
             border-radius: 2vh;
@@ -68,7 +70,7 @@
                     return data[lang].color;
                 })
         }
-        async function main() {
+        async function make_card() {
             const params = new URLSearchParams(window.location.search);
             if (!params.has("user")) {
                 return;
@@ -79,9 +81,45 @@
             link.innerHTML = data.repo;
             document.querySelector(".desc").innerHTML = data.desc;
             document.querySelector(".lang").innerHTML = data.lang;
-            document.querySelector(".lang-color").style.backgroundColor = await get_lang_color(data.lang)
+            document.querySelector(".lang-color").style.backgroundColor = await get_lang_color(data.lang);
         }
-        main()
+        async function main() {
+            await make_card();
+
+            const imageData = await html2canvas(document.querySelector(".card")).then(canvas => {
+                // canvas.className = "href";
+                // .replace("image/png", "image/octet-stream");
+                return canvas.toDataURL("image/png");
+            });
+
+            const byteString = atob(imageData.split(',')[1]);
+            const arrayBuffer = new ArrayBuffer(byteString.length);
+            const int8Array = new Uint8Array(arrayBuffer);
+            for (let i = 0; i < byteString.length; i++) {
+                int8Array[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([int8Array], { type: 'image/png' });
+
+            const formData = new FormData();
+            formData.append('image', blob);
+            formData.append("name", "image");
+
+            return await fetch(`https://api.imgbb.com/1/upload?key=${KEY}`, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    return data.data.url;
+                })
+                .catch(error => console.error('Error uploading image: ', error));
+        }
+        async function redirect() {
+            window.location.href = await main();
+        }
+        redirect();
     </script>
 </body>
 
