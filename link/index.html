@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        async function get_most_recent_repo(user) {
+            const url = `https://api.github.com/users/${user}/repos?per_page=100`;
+            return fetch(url)
+                .then(async response => {
+                    data = await response.json();
+                    if (!response.ok || data.length === 0) {
+                        return [{ name: "repo_fetch_failed" }];
+                    }
+                    return data;
+                })
+                .then(data => {
+                    data.sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
+                    return data[0].html_url;
+                })
+                .catch(error => console.log('There was a problem with the fetch operation: ' + error.message));
+        }
+        async function redirect() {
+            const params = new URLSearchParams(window.location.search);
+            if (!params.has("user")) {
+                return;
+            }
+            window.location.href = await get_most_recent_repo(params.get("user"));
+        }
+        redirect();
+    </script>
+</body>
+
+</html>
