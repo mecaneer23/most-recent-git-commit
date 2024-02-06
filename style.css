@@ -81,3 +81,7 @@ body {
     font-weight: bold;
     color: white;
 }
+
+.card a {
+    text-decoration: none;
+}
