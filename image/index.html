@@ -8,14 +8,14 @@
     <script src="/image/html2canvas.min.js"></script>
     <script src="/image/env.js"></script>
     <style>
-        .card {
+        #card {
             border-radius: 2vh;
             background-color: darkgray;
             padding: 1vh 1vw;
             width: fit-content;
         }
 
-        .card a {
+        #card a {
             text-decoration: none;
         }
 
@@ -33,7 +33,7 @@
 </head>
 
 <body>
-    <div class="card">
+    <div id="card">
         <h2><a class="link" href=""></a></h2>
         <p class="desc"></p>
         <div class="flex">
@@ -89,9 +89,10 @@
         async function main() {
             await make_card();
 
-            const imageData = await html2canvas(document.querySelector(".card")).then(canvas => {
-                // canvas.className = "href";
-                // .replace("image/png", "image/octet-stream");
+            const imageData = await html2canvas(
+                document.getElementById("card"),
+                { backgroundColor: "rgba(0,0,0,0)" }
+            ).then(canvas => {
                 return canvas.toDataURL("image/png");
             });
 
