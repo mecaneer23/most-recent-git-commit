@@ -70,7 +70,10 @@
                     return response.json();
                 })
                 .then(async data => {
-                    return data[lang].color;
+                    if (data[lang] !== undefined) {
+                        return data[lang].color;
+                    }
+                    return "gray";
                 })
         }
         async function make_card() {
