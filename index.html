@@ -37,8 +37,8 @@
     </div>
     <script>
         async function populate_card() {
-            const form = document.querySelector("#username");
-            const data = await get_most_recent_commit(form.value);
+            const params = new URLSearchParams(window.location.search);
+            let data = await get_most_recent_commit(params.has("user") ? params.get("user") : document.querySelector("#username").value);
             document.querySelector(".card").style.display = "block";
             document.querySelector(".card .link").innerHTML = data.repo;
             const commitUrl = new URL(data.url);
@@ -48,7 +48,11 @@
             const url = document.querySelector(".card .url");
             url.href = data.url;
             url.innerHTML = data.sha;
-            form.value = "";
+            document.querySelector("#username").value = "";
+        }
+        if (new URLSearchParams(window.location.search).has("user")) {
+            populate_card();
+            document.querySelectorAll("h1, form").forEach(e => e.style.display = "none");
         }
     </script>
 </body>
