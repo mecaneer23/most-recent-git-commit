@@ -12,14 +12,14 @@
     <script>
         function getRelativeTime(timestamp) {
             const DAY_MILLISECONDS = 1000 * 60 * 60 * 24;
-            const rtf = new Intl.RelativeTimeFormat('en', {
-                numeric: 'auto',
+            const rtf = new Intl.RelativeTimeFormat("en", {
+                numeric: "auto",
             });
             const daysDifference = Math.round(
                 (timestamp - new Date().getTime()) / DAY_MILLISECONDS,
             );
 
-            return rtf.format(daysDifference, 'day');
+            return rtf.format(daysDifference, "day");
         }
         async function get_most_recent_repo(user) {
             const url = `https://api.github.com/users/${user}/repos?per_page=100`;
@@ -35,7 +35,7 @@
                     data.sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
                     return data[0].name;
                 })
-                .catch(error => console.log('There was a problem with the fetch operation: ' + error.message));
+                .catch(error => console.log("There was a problem with the fetch operation: " + error.message));
         }
         async function get_most_recent_commit(user) {
             const repo = await get_most_recent_repo(user)
@@ -65,7 +65,7 @@
                         sha: data[0].sha,
                     };
                 })
-                .catch(error => console.log('There was a problem with the fetch operation: ' + error.message));
+                .catch(error => console.log("There was a problem with the fetch operation: " + error.message));
         }
     </script>
     <a href="https://github.com/mecaneer23/most-recent-git-commit" class="github-corner"
@@ -100,7 +100,7 @@
             document.querySelector(".card").style.display = "block";
             document.querySelector(".card .link").innerHTML = data.repo;
             const commitUrl = new URL(data.url);
-            document.querySelector(".card .link").href = `${commitUrl.protocol}//${commitUrl.host}${commitUrl.pathname.split('/').slice(0, 3).join('/')}`;
+            document.querySelector(".card .link").href = `${commitUrl.protocol}//${commitUrl.host}${commitUrl.pathname.split("/").slice(0, 3).join("/")}`;
             document.querySelector(".card .subtitle").innerHTML = data.message;
             document.querySelector(".card .date").innerHTML = new Date(data.date).toString() + "<br>(" + getRelativeTime(new Date(data.date)) + ")";
             const url = document.querySelector(".card .url");
