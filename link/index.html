@@ -9,8 +9,8 @@
 
 <body>
     <script>
-        async function get_most_recent_repo(user) {
-            const url = `https://api.github.com/users/${user}/repos?per_page=100`;
+        async function getMostRecentRepo(user) {
+            const url = `https://api.github.com/users/${user}/events/public`;
             return fetch(url)
                 .then(async response => {
                     data = await response.json();
@@ -20,17 +20,23 @@
                     return data;
                 })
                 .then(data => {
-                    data.sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
-                    return data[0].html_url;
+                    const mostRecentPushEvent = data.find(event => event.type === 'PushEvent');
+                    if (!mostRecentPushEvent) {
+                        console.log('No push events found.');
+                        return;
+                    }
+                    return `https://github.com/${mostRecentPushEvent.repo.name}`;
                 })
-                .catch(error => console.log('There was a problem with the fetch operation: ' + error.message));
+                .catch(error => {
+                    console.error('Error fetching events:', error);
+                });
         }
         async function redirect() {
             const params = new URLSearchParams(window.location.search);
             if (!params.has("user")) {
                 return;
             }
-            window.location.href = await get_most_recent_repo(params.get("user"));
+            window.location.href = await getMostRecentRepo(params.get("user"));
         }
         redirect();
     </script>
@@ -56,8 +62,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .loading-text {
