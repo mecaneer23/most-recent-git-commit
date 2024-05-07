@@ -21,27 +21,10 @@
 
             return rtf.format(daysDifference, "day");
         }
-        async function get_most_recent_repo(user) {
-            const url = `https://api.github.com/users/${user}/repos?per_page=100`;
+        async function getMostRecentCommit(user) {
+            const url = `https://api.github.com/users/${user}/events/public`;
             return fetch(url)
                 .then(async response => {
-                    data = await response.json();
-                    if (!response.ok || data.length === 0) {
-                        return [{ name: "repo_fetch_failed" }];
-                    }
-                    return data;
-                })
-                .then(data => {
-                    data.sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
-                    return data[0].name;
-                })
-                .catch(error => console.log("There was a problem with the fetch operation: " + error.message));
-        }
-        async function get_most_recent_commit(user) {
-            const repo = await get_most_recent_repo(user)
-            const url = `https://api.github.com/repos/${user}/${repo}/commits`;
-            return fetch(url)
-                .then(response => {
                     if (!response.ok) {
                         return [{
                             commit: {
@@ -54,15 +37,15 @@
                             sha: "Try again"
                         }];
                     }
-                    return response.json();
+                    return (await response.json())[0];
                 })
                 .then(data => {
                     return {
-                        repo: repo,
-                        message: data[0].commit.message,
-                        date: data[0].commit.author.date,
-                        url: data[0].html_url,
-                        sha: data[0].sha,
+                        repo: data.repo.name.split("/")[1],
+                        message: data.payload.commits[0].message,
+                        date: data.created_at,
+                        url: `https://github.com/${data.repo.name}`,
+                        sha: data.payload.commits[0].sha,
                     };
                 })
                 .catch(error => console.log("There was a problem with the fetch operation: " + error.message));
@@ -96,7 +79,7 @@
     <script>
         async function populate_card() {
             const params = new URLSearchParams(window.location.search);
-            let data = await get_most_recent_commit(params.has("user") ? params.get("user") : document.querySelector("#username").value);
+            let data = await getMostRecentCommit(params.has("user") ? params.get("user") : document.querySelector("#username").value);
             document.querySelector(".card").style.display = "block";
             document.querySelector(".card .link").innerHTML = data.repo;
             const commitUrl = new URL(data.url);
