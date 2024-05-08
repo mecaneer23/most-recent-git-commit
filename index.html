@@ -37,15 +37,15 @@
                             sha: "Try again"
                         }];
                     }
-                    return (await response.json())[0];
+                    return response.json();
                 })
                 .then(data => {
                     return {
-                        repo: data.repo.name.split("/")[1],
-                        message: data.payload.commits[0].message,
-                        date: data.created_at,
-                        url: `https://github.com/${data.repo.name}`,
-                        sha: data.payload.commits[0].sha,
+                        repo: data[0].repo.name.split("/")[1],
+                        message: data[0].payload.commits[0].message,
+                        date: data[0].created_at,
+                        url: `https://github.com/${data[0].repo.name}`,
+                        sha: data[0].payload.commits[0].sha,
                     };
                 })
                 .catch(error => console.log("There was a problem with the fetch operation: " + error.message));
