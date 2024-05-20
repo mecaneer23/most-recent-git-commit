@@ -34,22 +34,12 @@ def get_relative_time(date: datetime):
             self.hour, self.second = divmod(self.second, 3600)
             self.minute, self.second = divmod(self.second, 60)
 
-        @staticmethod
-        def _formatn(n: int, s: str) -> str:
-            """Add "s" if it's plural"""
-
-            if n == 1:
-                return f"1 {s}"
-            if n > 1:
-                return f"{n} {s}s"
-            return "You can't have less than one unit"
-
         def format(self):
             """Public method to get the relative time"""
             for period in ["year", "month", "day", "hour", "minute", "second"]:
-                n = getattr(self, period)
-                if n >= 1:
-                    return f"{self._formatn(n, period)} ago"
+                num = getattr(self, period)
+                if num >= 1:
+                    return f"{num} {period}{'s' if num > 1 else ''} ago"
             return "just now"
 
     return FormatDelta(date).format()
