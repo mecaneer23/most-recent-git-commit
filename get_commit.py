@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import requests
 
 
-def get_relative_time(date: datetime):
+def get_relative_time(date: datetime) -> str:
     """Take a datetime and return its "age" as a string.
     The age can be in second, minute, hour, day, month or year. Only the
     biggest unit is considered, e.g. if it's 2 days and 3 hours, "2 days" will
@@ -18,31 +18,20 @@ def get_relative_time(date: datetime):
     https://gist.github.com/jonlabelle/7d306575cbbd34b154f87b1853d532cc
     """
 
-    class FormatDelta:  # pylint: disable=too-few-public-methods
-        """
-        Wrapper around format method to convert datetime to
-        relative time string
-        """
+    now = datetime.now(timezone.utc)
+    delta = now - date
+    day = delta.days
+    second = delta.seconds
+    year, day = divmod(day, 365)
+    month, day = divmod(day, 30)
+    hour, second = divmod(second, 3600)
+    minute, second = divmod(second, 60)
+    nums = [year, month, day, hour, minute, second]
 
-        def __init__(self, dt: datetime) -> None:
-            now = datetime.now(timezone.utc)
-            delta = now - dt
-            self.day = delta.days
-            self.second = delta.seconds
-            self.year, self.day = divmod(self.day, 365)
-            self.month, self.day = divmod(self.day, 30)
-            self.hour, self.second = divmod(self.second, 3600)
-            self.minute, self.second = divmod(self.second, 60)
-
-        def format(self):
-            """Public method to get the relative time"""
-            for period in ["year", "month", "day", "hour", "minute", "second"]:
-                num = getattr(self, period)
-                if num >= 1:
-                    return f"{num} {period}{'s' if num > 1 else ''} ago"
-            return "just now"
-
-    return FormatDelta(date).format()
+    for num, period in zip(nums, ["year", "month", "day", "hour", "minute", "second"]):
+        if num >= 1:
+            return f"{num} {period}{'s' if num > 1 else ''} ago"
+    return "just now"
 
 
 def get_most_recent_repo(user: str) -> str:
