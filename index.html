@@ -21,34 +21,77 @@
 
             return rtf.format(daysDifference, "day");
         }
+        const NULL_SHA = "0000000000000000000000000000000000000000";
+
+        function fallback(reason) {
+            console.warn("[MostRecentGitCommit] FALLBACK:", reason);
+            return {
+                repo: "—",
+                message: "Unable to load commits. " + reason,
+                date: new Date().toISOString(),
+                url: "https://github.com",
+                sha: "—",
+            };
+        }
+
+        async function apiFetch(url) {
+            const useProxy = location.protocol === "file:";
+            const proxy = "https://corsproxy.io/?url=" + encodeURIComponent(url);
+            let res = useProxy
+                ? await fetch(proxy)
+                : await fetch(url, {
+                      headers: {
+                          "User-Agent":
+                              "MostRecentGitCommit (https://github.com/mecaneer23/most-recent-git-commit)",
+                      },
+                  });
+            if (!useProxy && res.status === 0) res = await fetch(proxy);
+            if (!res.ok) throw new Error("API " + res.status + " " + (res.statusText || ""));
+            try {
+                return await res.json();
+            } catch {
+                throw new Error("INVALID_JSON");
+            }
+        }
+
         async function getMostRecentCommit(user) {
-            const url = `https://api.github.com/users/${user}/events/public`;
-            return fetch(url)
-                .then(async response => {
-                    if (!response.ok) {
-                        return [{
-                            commit: {
-                                message: "Fetching commits failed",
-                                author: {
-                                    date: new Date().toISOString(),
-                                }
-                            },
-                            html_url: "https://mecaneer23.github.io/most-recent-git-commit",
-                            sha: "Try again"
-                        }];
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    return {
-                        repo: data[0].repo.name.split("/")[1],
-                        message: data[0].payload.commits[0].message,
-                        date: data[0].created_at,
-                        url: `https://github.com/${data[0].repo.name}`,
-                        sha: data[0].payload.commits[0].sha,
-                    };
-                })
-                .catch(error => console.log("There was a problem with the fetch operation: " + error.message));
+            const u = String(user ?? "").trim();
+            if (!u) return fallback("No username provided.");
+            try {
+                const events = await apiFetch(
+                    "https://api.github.com/users/" + encodeURIComponent(u) + "/events/public"
+                );
+                if (!Array.isArray(events) || events.length === 0) {
+                    return fallback("No public events for this user.");
+                }
+                const push = events.find(
+                    (e) =>
+                        e.type === "PushEvent" &&
+                        e.repo?.name &&
+                        e.payload?.head &&
+                        e.payload.head !== NULL_SHA
+                );
+                if (!push) return fallback("No push events with commits found.");
+
+                const repo = push.repo.name;
+                const sha = push.payload.head;
+                const c = await apiFetch(
+                    "https://api.github.com/repos/" + repo + "/commits/" + sha
+                );
+                return {
+                    repo: repo.split("/")[1],
+                    message: c.commit.message || "(no message)",
+                    date: c.commit.author.date,
+                    url: c.html_url,
+                    sha: c.sha.slice(0, 7),
+                };
+            } catch (e) {
+                if (e.message === "INVALID_JSON") return fallback("Invalid response (not JSON).");
+                if (e.message?.startsWith("API ")) {
+                    return fallback("API error " + e.message.slice(4));
+                }
+                return fallback("Network error: " + (e.message || String(e)));
+            }
         }
     </script>
     <a href="https://github.com/mecaneer23/most-recent-git-commit" class="github-corner"
@@ -79,11 +122,13 @@
     <script>
         async function populate_card() {
             const params = new URLSearchParams(window.location.search);
-            let data = await getMostRecentCommit(params.has("user") ? params.get("user") : document.querySelector("#username").value);
+            const user = params.has("user") ? params.get("user") : document.querySelector("#username").value;
+            const data = await getMostRecentCommit(user);
             document.querySelector(".card").style.display = "block";
             document.querySelector(".card .link").innerHTML = data.repo;
             const commitUrl = new URL(data.url);
-            document.querySelector(".card .link").href = `${commitUrl.protocol}//${commitUrl.host}${commitUrl.pathname.split("/").slice(0, 3).join("/")}`;
+            const pathPart = commitUrl.pathname.split("/").slice(0, 3).join("/");
+            document.querySelector(".card .link").href = pathPart && pathPart !== "//" ? `${commitUrl.protocol}//${commitUrl.host}${pathPart}` : data.url;
             document.querySelector(".card .subtitle").innerHTML = data.message;
             document.querySelector(".card .date").innerHTML = new Date(data.date).toString() + "<br>(" + getRelativeTime(new Date(data.date)) + ")";
             const url = document.querySelector(".card .url");
